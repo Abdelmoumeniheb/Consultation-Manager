@@ -40,13 +40,13 @@ const ReqConsultationByPatient = async (req,res)=>{
 const ConfirmedConsultationbyDoctor= async (req,res)=>{
     const { consultationId } = req.body; 
     try {
-        const existingConsultation = await consultation.findById(consultationId);
+        const existingConsultation = await consultation.findOne({consultationId: consultationId});
         if(!existingConsultation){
             return res.status(400).json({ message: "Consultation not found." });
-        }else if(existingConsultation.state!="Pending"){
+        }else if(existingConsultation.state[0]=="Pending"){
             const updatedConsultation = await consultation.findByIdAndUpdate(
             consultationId,
-            { state: existingConsultation[0].state.push("Confirmed"),
+            { state: [...existingConsultation.state,"Confirmed"],
             dateOfResponse: new Date(),
             dateAppointment: existingConsultation.dateRequest 
             },
@@ -61,20 +61,21 @@ const ConfirmedConsultationbyDoctor= async (req,res)=>{
 }
 
 const RefusedConsultationbyDoctor = async (req,res)=>{
-    const { consultationId } = req.body; 
+    const { consultationId,notes } = req.body; 
     if(!consultationId){
         return res.status(400).json({ message: "ConsultationId not found." });
     }
     try {
-        const existingConsultation = await consultation.findById(consultationId);
+        const existingConsultation = await consultation.findOne({consultationId: consultationId});
         if(!existingConsultation){
             return res.status(400).json({ message: "Consultation not found." });
         }
-        else if(existingConsultation.state!="Pending"){
+        else if(existingConsultation.state[0]=="Pending"){
             const updatedConsultation = await consultation.findByIdAndUpdate(
             consultationId,
-            { state: "Refused",
+            { state: [...existingConsultation.state,"Refused"],
             dateOfResponse: new Date(),
+            notes:notes
             },
             { new: true }
         );
@@ -95,7 +96,7 @@ const ProposeConsultationByDoctor = async (req,res)=>{
                  $gte: new Date(Date.parse(dateProposal) - 15 * 60 * 1000), 
                  $lte: new Date(Date.parse(dateProposal) + 15 * 60 * 1000), 
             },
-            state: { $in: ["Pending","proposal","Confirmed"] },
+            state: { $in: ["proposal","Confirmed"] },
             });
         if (existingConsultation.length > 0) {
             return res.status(400).json({ message: "A of consultation with this doctor already exists with "+existingConsultation.state+" state in this time ."+dateProposal+" ." });
@@ -105,7 +106,7 @@ const ProposeConsultationByDoctor = async (req,res)=>{
             patient: null,
             dateOfRequestorPropsal: new Date(),
             dateRequestorPropsal: dateProposal,
-            state: "Proposal"
+            state: ["Proposal"]
         });
         await newConsultation.save();
         return res.json(newConsultation);
@@ -124,18 +125,17 @@ const ConfirmeConsultationByPatient = async (req,res)=>{
             state: { $in: ["Pending", "Confirmed"] },
             });
         if (existingConsultation2.length > 0) {
-            return res.status(400).json({ message: "A consultation with this doctor already exists with "+existingConsultation.state+" state." });
+            return res.status(400).json({ message: "A consultation with this doctor already exists with "+existingConsultation1.state+" state." });
         }
         if(!existingConsultation1){
             return res.status(400).json({ message: "Consultation not found." });
-            
         }else if(existingConsultation1.state!="Pending"){
             const updatedConsultation = await consultation.findByIdAndUpdate(
             consultationId,
             { patient: req.user._id, 
-            state: "Confirmed",
+            state: [...existingConsultation1.state,"Confirmed"],
             dateOfResponse: new Date(),
-            dateAppointment: existingConsultation.dateRequestorPropsal 
+            dateAppointment: existingConsultation1.dateRequestorPropsal 
             },
             { new: true }
         );
@@ -150,7 +150,7 @@ const ConfirmeConsultationByPatient = async (req,res)=>{
 const DoneConsultationByDoctor = async (req,res)=>{
     const { consultationId,symptoms,diagnosis,medications,notes } = req.body; 
     try {
-        const existingConsultation = await consultation.findById(consultationId);
+        const existingConsultation = await consultation.findOne({consultationId: consultationId});
 
         if(!existingConsultation){
             return res.status(400).json({ message: "Consultation not found." });
@@ -161,7 +161,7 @@ const DoneConsultationByDoctor = async (req,res)=>{
             const updatedConsultation = await consultation.findByIdAndUpdate(
             consultationId,
             {
-            state: "Done",
+            state: [...existingConsultation.state,"Done"],
             symptoms: symptoms,
             diagnosis: diagnosis,
             medications: medications,

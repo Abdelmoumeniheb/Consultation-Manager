@@ -1,11 +1,22 @@
 const Doctor=require('../models/doctorModel');
+const User=require('../models/userModel');
 const bcrypt=require('bcrypt');
 var jwt = require('jsonwebtoken');
 
 const getallDoctor=async(req,res)=>{
     try{
-        const doctors=await Doctor.find();
-        res.json({"doctors":doctors});
+        const userDoctors=await User.find({role:"doctor"});
+       const AlldoctorInfo = [];
+
+        for (const doctor of userDoctors) {
+          const doctorInfo = await Doctor.find({ user: doctor._id });
+          const userDoctorInfo = {
+            user: doctor,
+            doctorInfo: doctorInfo[0],
+          };
+          AlldoctorInfo.push(userDoctorInfo);
+        }
+        res.json({"doctors":AlldoctorInfo});
     }
     catch(err){
         res.json({message:err});
