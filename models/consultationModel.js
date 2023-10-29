@@ -12,6 +12,6 @@ const consultationSchema = new mongoose.Schema({
   diagnosis: {type: String,required: false},
   medications: {type: [String],required: false},
   notes: {type: String,required: false},
-  state: {type: String,required: true},
+  state: {type: [String],required: true},
 });
 module.exports = mongoose.model('Consultation', consultationSchema);

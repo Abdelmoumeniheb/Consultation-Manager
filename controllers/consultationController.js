@@ -12,8 +12,9 @@ const ReqConsultationByPatient = async (req,res)=>{
             patient: req.user._id,
             state: { $in: ["Pending", "Confirmed"] },
             });
+            console.log(existingConsultation.state);
         if (existingConsultation.length > 0) {
-            return res.status(400).json({ message: "A consultation with this doctor already exists with "+existingConsultation.state+" state." });
+            return res.status(400).json({ message: "A consultation with this doctor already exists with "+existingConsultation[0].state[existingConsultation[0].state.length-1]+" state." });
         }
         const newConsultation = new consultation({
             doctor: doctorId,
@@ -26,7 +27,7 @@ const ReqConsultationByPatient = async (req,res)=>{
             diagnosis: diagnosis,
             medications: medications,
             notes: notes,
-            state: "Pending"
+            state: ["Pending"],
         });
         await newConsultation.save();
         return res.json(newConsultation);
@@ -45,7 +46,7 @@ const ConfirmedConsultationbyDoctor= async (req,res)=>{
         }else if(existingConsultation.state!="Pending"){
             const updatedConsultation = await consultation.findByIdAndUpdate(
             consultationId,
-            { state: "Confirmed",
+            { state: existingConsultation[0].state.push("Confirmed"),
             dateOfResponse: new Date(),
             dateAppointment: existingConsultation.dateRequest 
             },
@@ -116,16 +117,55 @@ const ProposeConsultationByDoctor = async (req,res)=>{
 const ConfirmeConsultationByPatient = async (req,res)=>{
     const { consultationId } = req.body; 
     try {
-        const existingConsultation = await consultation.findById(consultationId);
-        if(!existingConsultation){
+        const existingConsultation1 = await consultation.findById(consultationId);
+        const existingConsultation2 = await consultation.find({
+            doctor: existingConsultation1.doctor,
+            patient: req.user._id,
+            state: { $in: ["Pending", "Confirmed"] },
+            });
+        if (existingConsultation2.length > 0) {
+            return res.status(400).json({ message: "A consultation with this doctor already exists with "+existingConsultation.state+" state." });
+        }
+        if(!existingConsultation1){
             return res.status(400).json({ message: "Consultation not found." });
-        }else if(existingConsultation.state!="Pending"){
+            
+        }else if(existingConsultation1.state!="Pending"){
             const updatedConsultation = await consultation.findByIdAndUpdate(
             consultationId,
             { patient: req.user._id, 
             state: "Confirmed",
             dateOfResponse: new Date(),
             dateAppointment: existingConsultation.dateRequestorPropsal 
+            },
+            { new: true }
+        );
+        return res.json(updatedConsultation);
+        }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: err.message });
+    }
+}
+
+const DoneConsultationByDoctor = async (req,res)=>{
+    const { consultationId,symptoms,diagnosis,medications,notes } = req.body; 
+    try {
+        const existingConsultation = await consultation.findById(consultationId);
+
+        if(!existingConsultation){
+            return res.status(400).json({ message: "Consultation not found." });
+        if(existingConsultation.doctor!==req.user._id){
+            return res.status(400).json({ message: "You are not the doctor of this consultation." });
+        }
+        }else if( existingConsultation.state!="Done" ){
+            const updatedConsultation = await consultation.findByIdAndUpdate(
+            consultationId,
+            {
+            state: "Done",
+            symptoms: symptoms,
+            diagnosis: diagnosis,
+            medications: medications,
+            notes: notes,
             },
             { new: true }
         );
@@ -178,4 +218,4 @@ const deleteConsultation=async (req,res)=>{
         res.json({message:err});
     }
 }
-module.exports={ReqConsultationByPatient,ConfirmedConsultationbyDoctor,RefusedConsultationbyDoctor,ProposeConsultationByDoctor,ConfirmeConsultationByPatient,getAllConsultation,getConsultationById,updateConsultation,deleteConsultation};
+module.exports={ReqConsultationByPatient,ConfirmedConsultationbyDoctor,RefusedConsultationbyDoctor,ProposeConsultationByDoctor,ConfirmeConsultationByPatient,DoneConsultationByDoctor,getAllConsultation,getConsultationById,updateConsultation,deleteConsultation};
