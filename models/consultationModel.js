@@ -2,10 +2,11 @@ const mongoose = require('mongoose');
 const Doctor = require('./doctorModel');
 const Patient = require('./patientModel');
 const consultationSchema = new mongoose.Schema({
-  doctor: {type: mongoose.Schema.Types.ObjectId,ref: 'Doctor',required: true},
-  patient: {type: mongoose.Schema.Types.ObjectId,ref: 'Patient',required: true},
-  dateOfRequest: {type: Date,required: true},
-  dateRequest: {type: Date,required: false},
+  doctor: {type: mongoose.Schema.Types.ObjectId,ref: 'User',required: true},
+  patient: {type: mongoose.Schema.Types.ObjectId,ref: 'User',required: false},
+  dateOfRequestorPropsal: {type: Date,required: true},
+  dateRequestorPropsal: {type: Date,required: false},
+  dateOfResponse: {type: Date,required: false},
   dateAppointment: {type: Date,required: false},
   symptoms: {type: String,required: false},
   diagnosis: {type: String,required: false},

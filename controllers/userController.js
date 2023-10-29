@@ -69,7 +69,9 @@ else{
         });
         await newuser.save();
         await newpatient.save();
-    }    
+    }else{
+        await newuser.save();
+    }   
     try{
         res.json(newuser);
     }
